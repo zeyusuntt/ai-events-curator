@@ -1,0 +1,972 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AI Events Curator — South Bay & SF | Luma Research</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <style>
+    :root {
+      --bg: #0f1117;
+      --surface: #1a1d27;
+      --surface2: #22263a;
+      --border: #2e3250;
+      --accent: #6c63ff;
+      --accent2: #00d4aa;
+      --accent3: #ff6b6b;
+      --accent4: #ffd166;
+      --text: #e8eaf6;
+      --text-muted: #8892b0;
+      --stanford: #8C1515;
+      --hackathon: #00b4d8;
+      --hiring: #06d6a0;
+      --conference: #f72585;
+      --meetup: #7209b7;
+      --high: #06d6a0;
+      --medium: #ffd166;
+      --radius: 12px;
+      --shadow: 0 4px 24px rgba(0,0,0,0.4);
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      line-height: 1.6;
+    }
+
+    /* HEADER */
+    .header {
+      background: linear-gradient(135deg, #1a1d27 0%, #0f1117 100%);
+      border-bottom: 1px solid var(--border);
+      padding: 32px 24px 24px;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+    .header::before {
+      content: '';
+      position: absolute;
+      top: -50%;
+      left: -50%;
+      width: 200%;
+      height: 200%;
+      background: radial-gradient(ellipse at center, rgba(108,99,255,0.08) 0%, transparent 70%);
+      pointer-events: none;
+    }
+    .header-badge {
+      display: inline-block;
+      background: rgba(108,99,255,0.15);
+      border: 1px solid rgba(108,99,255,0.4);
+      color: #a29bfe;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      padding: 4px 12px;
+      border-radius: 20px;
+      margin-bottom: 12px;
+    }
+    .header h1 {
+      font-size: clamp(24px, 4vw, 40px);
+      font-weight: 800;
+      background: linear-gradient(135deg, #e8eaf6 0%, #a29bfe 50%, #00d4aa 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: 8px;
+    }
+    .header p {
+      color: var(--text-muted);
+      font-size: 15px;
+      max-width: 600px;
+      margin: 0 auto 16px;
+    }
+    .header-meta {
+      display: flex;
+      justify-content: center;
+      gap: 24px;
+      flex-wrap: wrap;
+      font-size: 13px;
+      color: var(--text-muted);
+    }
+    .header-meta span { display: flex; align-items: center; gap: 6px; }
+    .header-meta strong { color: var(--text); }
+
+    /* MAIN LAYOUT */
+    .container { max-width: 1400px; margin: 0 auto; padding: 24px; }
+
+    /* STATS GRID */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      gap: 16px;
+      margin-bottom: 32px;
+    }
+    .stat-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px;
+      text-align: center;
+      transition: transform 0.2s, border-color 0.2s;
+    }
+    .stat-card:hover { transform: translateY(-2px); border-color: var(--accent); }
+    .stat-card .num {
+      font-size: 36px;
+      font-weight: 800;
+      line-height: 1;
+      margin-bottom: 4px;
+    }
+    .stat-card .label { font-size: 12px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; }
+    .stat-card.purple .num { color: var(--accent); }
+    .stat-card.teal .num { color: var(--accent2); }
+    .stat-card.red .num { color: var(--accent3); }
+    .stat-card.yellow .num { color: var(--accent4); }
+    .stat-card.stanford .num { color: #e8a0a0; }
+    .stat-card.blue .num { color: var(--hackathon); }
+
+    /* CHARTS SECTION */
+    .charts-section {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 20px;
+      margin-bottom: 32px;
+    }
+    @media (max-width: 900px) { .charts-section { grid-template-columns: 1fr; } }
+    .chart-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px;
+    }
+    .chart-card h3 {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 16px;
+    }
+    .chart-container { position: relative; height: 200px; }
+
+    /* FILTERS */
+    .filters-bar {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px;
+      margin-bottom: 24px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 16px;
+      align-items: flex-end;
+    }
+    .filter-group { display: flex; flex-direction: column; gap: 6px; }
+    .filter-group label { font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600; }
+    .filter-group select, .filter-group input {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 8px 12px;
+      border-radius: 8px;
+      font-size: 13px;
+      outline: none;
+      min-width: 140px;
+      cursor: pointer;
+      transition: border-color 0.2s;
+    }
+    .filter-group select:hover, .filter-group input:hover,
+    .filter-group select:focus, .filter-group input:focus { border-color: var(--accent); }
+    .filter-group input { min-width: 200px; }
+    .btn-reset {
+      background: rgba(108,99,255,0.15);
+      border: 1px solid rgba(108,99,255,0.4);
+      color: #a29bfe;
+      padding: 8px 16px;
+      border-radius: 8px;
+      font-size: 13px;
+      cursor: pointer;
+      transition: all 0.2s;
+      font-weight: 600;
+    }
+    .btn-reset:hover { background: rgba(108,99,255,0.3); }
+    .results-count { margin-left: auto; font-size: 13px; color: var(--text-muted); align-self: center; }
+    .results-count strong { color: var(--text); }
+
+    /* TAG FILTERS */
+    .tag-filters {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 24px;
+    }
+    .tag-btn {
+      padding: 5px 12px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      color: var(--text-muted);
+      transition: all 0.2s;
+    }
+    .tag-btn:hover { border-color: var(--accent); color: var(--text); }
+    .tag-btn.active { background: var(--accent); border-color: var(--accent); color: white; }
+    .tag-btn.stanford-tag.active { background: var(--stanford); border-color: var(--stanford); }
+    .tag-btn.hackathon-tag.active { background: var(--hackathon); border-color: var(--hackathon); }
+    .tag-btn.hiring-tag.active { background: var(--hiring); border-color: var(--hiring); color: #000; }
+
+    /* TIMELINE VIEW */
+    .section-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 16px;
+    }
+    .section-header h2 { font-size: 18px; font-weight: 700; }
+    .view-toggle { display: flex; gap: 8px; }
+    .view-btn {
+      padding: 6px 14px;
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      color: var(--text-muted);
+      transition: all 0.2s;
+    }
+    .view-btn.active { background: var(--accent); border-color: var(--accent); color: white; }
+
+    /* EVENTS GRID */
+    #events-container {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+      gap: 20px;
+    }
+    #events-container.list-view {
+      grid-template-columns: 1fr;
+    }
+
+    /* EVENT CARD */
+    .event-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px;
+      transition: transform 0.2s, border-color 0.2s, box-shadow 0.2s;
+      cursor: pointer;
+      position: relative;
+      overflow: hidden;
+    }
+    .event-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 3px;
+      background: var(--card-accent, var(--accent));
+    }
+    .event-card:hover {
+      transform: translateY(-3px);
+      border-color: var(--card-accent, var(--accent));
+      box-shadow: var(--shadow);
+    }
+    .event-card.stanford-card { --card-accent: var(--stanford); }
+    .event-card.hackathon-card { --card-accent: var(--hackathon); }
+    .event-card.hiring-card { --card-accent: var(--hiring); }
+    .event-card.conference-card { --card-accent: var(--conference); }
+    .event-card.meetup-card { --card-accent: var(--meetup); }
+
+    .card-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 12px;
+      gap: 8px;
+    }
+    .card-badges { display: flex; flex-wrap: wrap; gap: 6px; }
+    .badge {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+      padding: 3px 8px;
+      border-radius: 4px;
+    }
+    .badge-stanford { background: rgba(140,21,21,0.3); color: #e8a0a0; border: 1px solid rgba(140,21,21,0.5); }
+    .badge-hackathon { background: rgba(0,180,216,0.2); color: #90e0ef; border: 1px solid rgba(0,180,216,0.4); }
+    .badge-hiring { background: rgba(6,214,160,0.2); color: #06d6a0; border: 1px solid rgba(6,214,160,0.4); }
+    .badge-conference { background: rgba(247,37,133,0.2); color: #ff85c2; border: 1px solid rgba(247,37,133,0.4); }
+    .badge-meetup { background: rgba(114,9,183,0.2); color: #c77dff; border: 1px solid rgba(114,9,183,0.4); }
+    .badge-vc { background: rgba(255,209,102,0.2); color: #ffd166; border: 1px solid rgba(255,209,102,0.4); }
+    .badge-workshop { background: rgba(0,212,170,0.2); color: #00d4aa; border: 1px solid rgba(0,212,170,0.4); }
+    .badge-pitch { background: rgba(255,107,107,0.2); color: #ff6b6b; border: 1px solid rgba(255,107,107,0.4); }
+
+    .priority-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      flex-shrink: 0;
+      margin-top: 4px;
+    }
+    .priority-high { background: var(--high); box-shadow: 0 0 8px var(--high); }
+    .priority-medium { background: var(--medium); box-shadow: 0 0 8px var(--medium); }
+
+    .card-title {
+      font-size: 15px;
+      font-weight: 700;
+      line-height: 1.4;
+      margin-bottom: 10px;
+      color: var(--text);
+    }
+    .card-meta {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+      margin-bottom: 12px;
+    }
+    .card-meta-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+    .card-meta-row .icon { font-size: 13px; }
+    .card-meta-row strong { color: var(--text); }
+
+    .card-desc {
+      font-size: 13px;
+      color: var(--text-muted);
+      line-height: 1.5;
+      margin-bottom: 14px;
+      display: -webkit-box;
+      -webkit-line-clamp: 3;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+    .card-why {
+      background: var(--surface2);
+      border-left: 3px solid var(--card-accent, var(--accent));
+      padding: 10px 12px;
+      border-radius: 0 8px 8px 0;
+      margin-bottom: 14px;
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+    .card-why strong { color: var(--accent2); font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; display: block; margin-bottom: 3px; }
+
+    .card-footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .card-cost {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--accent2);
+    }
+    .card-cost.paid { color: var(--accent4); }
+    .card-status {
+      font-size: 11px;
+      padding: 3px 8px;
+      border-radius: 4px;
+      font-weight: 600;
+    }
+    .status-open { background: rgba(6,214,160,0.15); color: var(--hiring); }
+    .status-waitlist { background: rgba(255,107,107,0.15); color: var(--accent3); }
+    .status-approval { background: rgba(255,209,102,0.15); color: var(--accent4); }
+    .card-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      background: rgba(108,99,255,0.15);
+      border: 1px solid rgba(108,99,255,0.4);
+      color: #a29bfe;
+      padding: 5px 12px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 600;
+      text-decoration: none;
+      transition: all 0.2s;
+    }
+    .card-link:hover { background: rgba(108,99,255,0.3); }
+
+    /* TIMELINE VIEW */
+    .timeline-container { display: none; }
+    .timeline-container.active { display: block; }
+    .events-grid.hidden { display: none; }
+
+    /* MONTH SECTION */
+    .month-section { margin-bottom: 32px; }
+    .month-header {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 12px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .month-count {
+      background: var(--surface2);
+      color: var(--text-muted);
+      font-size: 11px;
+      padding: 2px 8px;
+      border-radius: 10px;
+    }
+
+    /* EMPTY STATE */
+    .empty-state {
+      text-align: center;
+      padding: 60px 20px;
+      color: var(--text-muted);
+      display: none;
+    }
+    .empty-state.visible { display: block; }
+    .empty-state .emoji { font-size: 48px; margin-bottom: 16px; }
+
+    /* FOOTER */
+    .footer {
+      text-align: center;
+      padding: 32px 24px;
+      border-top: 1px solid var(--border);
+      color: var(--text-muted);
+      font-size: 13px;
+      margin-top: 48px;
+    }
+    .footer a { color: var(--accent); text-decoration: none; }
+
+    /* SCROLLBAR */
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: var(--bg); }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+    /* RESPONSIVE */
+    @media (max-width: 600px) {
+      .filters-bar { flex-direction: column; }
+      #events-container { grid-template-columns: 1fr; }
+      .charts-section { grid-template-columns: 1fr; }
+    }
+
+    /* LEGEND */
+    .legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-bottom: 20px;
+      font-size: 12px;
+    }
+    .legend-item { display: flex; align-items: center; gap: 6px; color: var(--text-muted); }
+    .legend-dot { width: 8px; height: 8px; border-radius: 50%; }
+
+    /* TOOLTIP */
+    .tooltip-text {
+      font-size: 11px;
+      color: var(--text-muted);
+      font-style: italic;
+      margin-top: 2px;
+    }
+  </style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-badge">🤖 AI Events Curator · Luma Research</div>
+  <h1>AI/LLM Events — South Bay & SF</h1>
+  <p>Curated events for AI/LLM engineers seeking exposure to startups, companies, VCs, and the broader AI community. Prioritizing Stanford-hosted events, South Bay locations, and high-signal opportunities.</p>
+  <div class="header-meta">
+    <span>📅 <strong>Updated:</strong> Apr 11, 2026</span>
+    <span>📍 <strong>Focus:</strong> South Bay + San Francisco</span>
+    <span>🔗 <strong>Source:</strong> Luma (lu.ma)</span>
+    <span>🎯 <strong>Profile:</strong> AI/LLM Software Engineer</span>
+  </div>
+</div>
+
+<div class="container">
+
+  <!-- STATS -->
+  <div class="stats-grid" id="stats-grid">
+    <div class="stat-card purple">
+      <div class="num" id="stat-total">24</div>
+      <div class="label">Curated Events</div>
+    </div>
+    <div class="stat-card stanford">
+      <div class="num" id="stat-stanford">5</div>
+      <div class="label">Stanford Events</div>
+    </div>
+    <div class="stat-card blue">
+      <div class="num" id="stat-hackathons">4</div>
+      <div class="label">Hackathons</div>
+    </div>
+    <div class="stat-card teal">
+      <div class="num" id="stat-south-bay">13</div>
+      <div class="label">South Bay</div>
+    </div>
+    <div class="stat-card yellow">
+      <div class="num" id="stat-hiring">3</div>
+      <div class="label">Hiring Events</div>
+    </div>
+    <div class="stat-card red">
+      <div class="num" id="stat-free">20</div>
+      <div class="label">Free Events</div>
+    </div>
+  </div>
+
+  <!-- CHARTS -->
+  <div class="charts-section">
+    <div class="chart-card">
+      <h3>📊 Events by Type</h3>
+      <div class="chart-container">
+        <canvas id="typeChart"></canvas>
+      </div>
+    </div>
+    <div class="chart-card">
+      <h3>📍 Events by Location</h3>
+      <div class="chart-container">
+        <canvas id="locationChart"></canvas>
+      </div>
+    </div>
+    <div class="chart-card">
+      <h3>📅 Timeline (Apr–Jul)</h3>
+      <div class="chart-container">
+        <canvas id="timelineChart"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- FILTERS -->
+  <div class="filters-bar">
+    <div class="filter-group">
+      <label>Search</label>
+      <input type="text" id="search-input" placeholder="Search events, hosts, topics..." />
+    </div>
+    <div class="filter-group">
+      <label>Area</label>
+      <select id="area-filter">
+        <option value="all">All Areas</option>
+        <option value="South Bay">South Bay</option>
+        <option value="San Francisco">San Francisco</option>
+      </select>
+    </div>
+    <div class="filter-group">
+      <label>Event Type</label>
+      <select id="type-filter">
+        <option value="all">All Types</option>
+        <option value="Hackathon">Hackathon</option>
+        <option value="Speaker Series">Speaker Series</option>
+        <option value="Conference / Summit">Conference / Summit</option>
+        <option value="Tech Meetup">Tech Meetup / Talk</option>
+        <option value="Hiring">Hiring / Networking</option>
+        <option value="Workshop">Workshop</option>
+        <option value="Pitch">Pitch / Fireside</option>
+        <option value="VC">VC / Research</option>
+      </select>
+    </div>
+    <div class="filter-group">
+      <label>Priority</label>
+      <select id="priority-filter">
+        <option value="all">All Priorities</option>
+        <option value="High">High Priority</option>
+        <option value="Medium">Medium Priority</option>
+      </select>
+    </div>
+    <div class="filter-group">
+      <label>Cost</label>
+      <select id="cost-filter">
+        <option value="all">All</option>
+        <option value="Free">Free Only</option>
+        <option value="Paid">Paid</option>
+      </select>
+    </div>
+    <button class="btn-reset" onclick="resetFilters()">↺ Reset</button>
+    <div class="results-count"><strong id="results-num">24</strong> events shown</div>
+  </div>
+
+  <!-- TAG QUICK FILTERS -->
+  <div class="tag-filters">
+    <span style="font-size:12px;color:var(--text-muted);align-self:center;margin-right:4px;">Quick:</span>
+    <button class="tag-btn stanford-tag" onclick="toggleTag('Stanford')">🎓 Stanford</button>
+    <button class="tag-btn hackathon-tag" onclick="toggleTag('Hackathon')">⚡ Hackathon</button>
+    <button class="tag-btn hiring-tag" onclick="toggleTag('Hiring')">💼 Hiring</button>
+    <button class="tag-btn" onclick="toggleTag('LLM')">🧠 LLM/AI</button>
+    <button class="tag-btn" onclick="toggleTag('VC')">💰 VC/Investors</button>
+    <button class="tag-btn" onclick="toggleTag('South Bay')">📍 South Bay</button>
+    <button class="tag-btn" onclick="toggleTag('AI Agents')">🤖 AI Agents</button>
+    <button class="tag-btn" onclick="toggleTag('Startup')">🚀 Startup</button>
+  </div>
+
+  <!-- LEGEND -->
+  <div class="legend">
+    <div class="legend-item"><div class="legend-dot" style="background:var(--high);box-shadow:0 0 6px var(--high)"></div> High Priority</div>
+    <div class="legend-item"><div class="legend-dot" style="background:var(--medium)"></div> Medium Priority</div>
+    <div class="legend-item"><div class="legend-dot" style="background:var(--stanford)"></div> Stanford</div>
+    <div class="legend-item"><div class="legend-dot" style="background:var(--hackathon)"></div> Hackathon</div>
+    <div class="legend-item"><div class="legend-dot" style="background:var(--hiring)"></div> Hiring</div>
+    <div class="legend-item"><div class="legend-dot" style="background:var(--conference)"></div> Conference</div>
+  </div>
+
+  <!-- SECTION HEADER -->
+  <div class="section-header">
+    <h2>Curated Events</h2>
+    <div class="view-toggle">
+      <button class="view-btn active" id="grid-btn" onclick="setView('grid')">⊞ Grid</button>
+      <button class="view-btn" id="list-btn" onclick="setView('list')">☰ List</button>
+    </div>
+  </div>
+
+  <!-- EVENTS CONTAINER -->
+  <div id="events-container"></div>
+  <div class="empty-state" id="empty-state">
+    <div class="emoji">🔍</div>
+    <div>No events match your filters.</div>
+    <div style="margin-top:8px;font-size:12px;">Try adjusting your search or filters.</div>
+  </div>
+
+</div>
+
+<div class="footer">
+  <p>Data sourced from <a href="https://lu.ma" target="_blank">Luma (lu.ma)</a> · Curated for AI/LLM engineers in the South Bay Area · Updated Apr 11, 2026</p>
+  <p style="margin-top:8px;">Tip: Subscribe to <a href="https://luma.com/genai-sf" target="_blank">Bond AI SF</a> and <a href="https://luma.com/StartX" target="_blank">StartX & Friends</a> calendars on Luma for ongoing updates.</p>
+</div>
+
+<script src="events_data.js"></script>
+<script>
+// ===== STATE =====
+let activeTag = null;
+let currentView = 'grid';
+let filters = { search: '', area: 'all', type: 'all', priority: 'all', cost: 'all' };
+
+// ===== CARD HELPERS =====
+function getCardClass(event) {
+  if (event.tags.includes('Stanford')) return 'stanford-card';
+  if (event.type === 'Hackathon') return 'hackathon-card';
+  if (['Job Fair / Networking','Hiring Event','VC / Research Networking','Tech Networking'].includes(event.type)) return 'hiring-card';
+  if (event.type === 'Conference / Summit') return 'conference-card';
+  return 'meetup-card';
+}
+
+function getBadges(event) {
+  let badges = [];
+  if (event.tags.includes('Stanford')) badges.push('<span class="badge badge-stanford">🎓 Stanford</span>');
+  if (event.type === 'Hackathon') badges.push('<span class="badge badge-hackathon">⚡ Hackathon</span>');
+  if (['Job Fair / Networking','Hiring Event'].includes(event.type)) badges.push('<span class="badge badge-hiring">💼 Hiring</span>');
+  if (event.type === 'Conference / Summit') badges.push('<span class="badge badge-conference">🏛 Summit</span>');
+  if (['VC / Research Networking'].includes(event.type)) badges.push('<span class="badge badge-vc">💰 VC</span>');
+  if (event.type === 'Workshop') badges.push('<span class="badge badge-workshop">🔧 Workshop</span>');
+  if (['Startup Pitch / Fireside Chat','Pitch Competition'].includes(event.type)) badges.push('<span class="badge badge-pitch">🎤 Pitch</span>');
+  if (event.type === 'Speaker Series') badges.push('<span class="badge badge-conference">🎙 Speaker</span>');
+  if (event.type === 'Founders & Builders Night') badges.push('<span class="badge badge-meetup">🚀 Builders</span>');
+  return badges.join('');
+}
+
+function getStatusBadge(status) {
+  if (status === 'Open') return '<span class="card-status status-open">✓ Open</span>';
+  if (status === 'Waitlist') return '<span class="card-status status-waitlist">⏳ Waitlist</span>';
+  if (status === 'Approval Required') return '<span class="card-status status-approval">📋 Approval</span>';
+  return '';
+}
+
+function renderCard(event) {
+  const cardClass = getCardClass(event);
+  const badges = getBadges(event);
+  const priorityClass = event.priority === 'High' ? 'priority-high' : 'priority-medium';
+  const statusBadge = getStatusBadge(event.status);
+  const costClass = event.cost === 'Free' ? '' : 'paid';
+  const attendeesStr = event.attendees ? `<div class="card-meta-row"><span class="icon">👥</span> ${event.attendees.toLocaleString()} registered</div>` : '';
+
+  return `
+    <div class="event-card ${cardClass}" data-id="${event.id}">
+      <div class="card-top">
+        <div class="card-badges">${badges}</div>
+        <div class="priority-dot ${priorityClass}" title="${event.priority} Priority"></div>
+      </div>
+      <div class="card-title">${event.title}</div>
+      <div class="card-meta">
+        <div class="card-meta-row"><span class="icon">📅</span> <strong>${event.dateDisplay}</strong> · ${event.time}</div>
+        <div class="card-meta-row"><span class="icon">📍</span> ${event.location}</div>
+        <div class="card-meta-row"><span class="icon">🏢</span> ${event.host}</div>
+        ${attendeesStr}
+      </div>
+      <div class="card-desc">${event.description}</div>
+      <div class="card-why">
+        <strong>Why Attend</strong>
+        ${event.whyAttend}
+      </div>
+      <div class="card-footer">
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+          <span class="card-cost ${costClass}">${event.cost}</span>
+          ${statusBadge}
+        </div>
+        <a href="${event.url}" target="_blank" class="card-link">View on Luma ↗</a>
+      </div>
+    </div>
+  `;
+}
+
+// ===== FILTERING =====
+function matchesFilters(event) {
+  const { search, area, type, priority, cost } = filters;
+
+  if (search) {
+    const q = search.toLowerCase();
+    const searchable = `${event.title} ${event.host} ${event.description} ${event.tags.join(' ')} ${event.location}`.toLowerCase();
+    if (!searchable.includes(q)) return false;
+  }
+
+  if (area !== 'all' && event.area !== area) return false;
+
+  if (type !== 'all') {
+    const typeMap = {
+      'Hackathon': ['Hackathon'],
+      'Speaker Series': ['Speaker Series'],
+      'Conference / Summit': ['Conference / Summit'],
+      'Tech Meetup': ['Tech Meetup', 'Tech Talk', 'Tech Talk / Meetup'],
+      'Hiring': ['Job Fair / Networking', 'Hiring Event', 'Networking / Happy Hour', 'Startup Networking', 'Tech Networking'],
+      'Workshop': ['Workshop'],
+      'Pitch': ['Startup Pitch / Fireside Chat', 'Pitch Competition'],
+      'VC': ['VC / Research Networking', 'Founders & Builders Night'],
+    };
+    if (!typeMap[type]?.includes(event.type)) return false;
+  }
+
+  if (priority !== 'all' && event.priority !== priority) return false;
+
+  if (cost !== 'all') {
+    if (cost === 'Free' && event.cost !== 'Free') return false;
+    if (cost === 'Paid' && event.cost === 'Free') return false;
+  }
+
+  if (activeTag) {
+    const tagMap = {
+      'Stanford': () => event.tags.includes('Stanford'),
+      'Hackathon': () => event.type === 'Hackathon',
+      'Hiring': () => ['Job Fair / Networking','Hiring Event'].includes(event.type),
+      'LLM': () => event.tags.includes('LLM') || event.tags.includes('AI'),
+      'VC': () => event.tags.includes('VC'),
+      'South Bay': () => event.area === 'South Bay',
+      'AI Agents': () => event.tags.includes('AI Agents'),
+      'Startup': () => event.tags.includes('Startup') || event.tags.includes('AI Startup'),
+    };
+    if (tagMap[activeTag] && !tagMap[activeTag]()) return false;
+  }
+
+  return true;
+}
+
+function renderEvents() {
+  const container = document.getElementById('events-container');
+  const emptyState = document.getElementById('empty-state');
+  const filtered = eventsData.filter(matchesFilters);
+
+  // Sort by date then priority score
+  filtered.sort((a, b) => {
+    const dateDiff = new Date(a.date) - new Date(b.date);
+    if (dateDiff !== 0) return dateDiff;
+    return b.priorityScore - a.priorityScore;
+  });
+
+  document.getElementById('results-num').textContent = filtered.length;
+
+  if (filtered.length === 0) {
+    container.innerHTML = '';
+    emptyState.classList.add('visible');
+    return;
+  }
+  emptyState.classList.remove('visible');
+
+  if (currentView === 'grid') {
+    container.innerHTML = filtered.map(renderCard).join('');
+  } else {
+    // List view: group by month
+    const months = {};
+    filtered.forEach(e => {
+      const d = new Date(e.date);
+      const key = d.toLocaleString('en-US', { month: 'long', year: 'numeric' });
+      if (!months[key]) months[key] = [];
+      months[key].push(e);
+    });
+    let html = '';
+    for (const [month, events] of Object.entries(months)) {
+      html += `<div class="month-section">
+        <div class="month-header">📅 ${month} <span class="month-count">${events.length} events</span></div>
+        <div style="display:grid;gap:12px;">
+          ${events.map(renderCard).join('')}
+        </div>
+      </div>`;
+    }
+    container.innerHTML = html;
+  }
+}
+
+// ===== CONTROLS =====
+function resetFilters() {
+  filters = { search: '', area: 'all', type: 'all', priority: 'all', cost: 'all' };
+  activeTag = null;
+  document.getElementById('search-input').value = '';
+  document.getElementById('area-filter').value = 'all';
+  document.getElementById('type-filter').value = 'all';
+  document.getElementById('priority-filter').value = 'all';
+  document.getElementById('cost-filter').value = 'all';
+  document.querySelectorAll('.tag-btn').forEach(b => b.classList.remove('active'));
+  renderEvents();
+}
+
+function toggleTag(tag) {
+  if (activeTag === tag) {
+    activeTag = null;
+    document.querySelectorAll('.tag-btn').forEach(b => b.classList.remove('active'));
+  } else {
+    activeTag = tag;
+    document.querySelectorAll('.tag-btn').forEach(b => {
+      b.classList.toggle('active', b.textContent.trim().includes(tag) || b.getAttribute('onclick')?.includes(`'${tag}'`));
+    });
+  }
+  renderEvents();
+}
+
+function setView(view) {
+  currentView = view;
+  document.getElementById('grid-btn').classList.toggle('active', view === 'grid');
+  document.getElementById('list-btn').classList.toggle('active', view === 'list');
+  const container = document.getElementById('events-container');
+  container.classList.toggle('list-view', view === 'list');
+  renderEvents();
+}
+
+// ===== EVENT LISTENERS =====
+document.getElementById('search-input').addEventListener('input', e => {
+  filters.search = e.target.value;
+  renderEvents();
+});
+document.getElementById('area-filter').addEventListener('change', e => {
+  filters.area = e.target.value;
+  renderEvents();
+});
+document.getElementById('type-filter').addEventListener('change', e => {
+  filters.type = e.target.value;
+  renderEvents();
+});
+document.getElementById('priority-filter').addEventListener('change', e => {
+  filters.priority = e.target.value;
+  renderEvents();
+});
+document.getElementById('cost-filter').addEventListener('change', e => {
+  filters.cost = e.target.value;
+  renderEvents();
+});
+
+// ===== CHARTS =====
+function initCharts() {
+  const chartDefaults = {
+    plugins: {
+      legend: {
+        labels: { color: '#8892b0', font: { size: 11 }, boxWidth: 12 }
+      }
+    }
+  };
+
+  // Type chart
+  const typeCtx = document.getElementById('typeChart').getContext('2d');
+  new Chart(typeCtx, {
+    type: 'doughnut',
+    data: {
+      labels: ['Hackathon', 'Speaker Series', 'Conference', 'Tech Meetup/Talk', 'Hiring/Network', 'Workshop', 'Pitch/Fireside', 'Founders Night'],
+      datasets: [{
+        data: [4, 2, 3, 4, 5, 1, 2, 1],
+        backgroundColor: [
+          '#00b4d8', '#8C1515', '#f72585', '#7209b7',
+          '#06d6a0', '#00d4aa', '#ff6b6b', '#ffd166'
+        ],
+        borderWidth: 0,
+        hoverOffset: 4
+      }]
+    },
+    options: {
+      ...chartDefaults,
+      cutout: '60%',
+      plugins: {
+        ...chartDefaults.plugins,
+        legend: { position: 'right', labels: { color: '#8892b0', font: { size: 10 }, boxWidth: 10, padding: 8 } }
+      }
+    }
+  });
+
+  // Location chart
+  const locCtx = document.getElementById('locationChart').getContext('2d');
+  new Chart(locCtx, {
+    type: 'bar',
+    data: {
+      labels: ['South Bay', 'San Francisco'],
+      datasets: [{
+        label: 'Events',
+        data: [13, 11],
+        backgroundColor: ['#6c63ff', '#00d4aa'],
+        borderRadius: 8,
+        borderWidth: 0
+      }]
+    },
+    options: {
+      ...chartDefaults,
+      indexAxis: 'y',
+      plugins: { ...chartDefaults.plugins, legend: { display: false } },
+      scales: {
+        x: { ticks: { color: '#8892b0', font: { size: 10 } }, grid: { color: '#2e3250' } },
+        y: { ticks: { color: '#e8eaf6', font: { size: 12 } }, grid: { display: false } }
+      }
+    }
+  });
+
+  // Timeline chart
+  const timeCtx = document.getElementById('timelineChart').getContext('2d');
+  new Chart(timeCtx, {
+    type: 'bar',
+    data: {
+      labels: ['Apr 11-13', 'Apr 14-16', 'Apr 17-19', 'Apr 20-22', 'Apr 23-25', 'Apr 26-28', 'Jun-Jul'],
+      datasets: [
+        {
+          label: 'South Bay',
+          data: [2, 5, 3, 2, 1, 1, 2],
+          backgroundColor: '#6c63ff',
+          borderRadius: 4,
+          borderWidth: 0
+        },
+        {
+          label: 'San Francisco',
+          data: [1, 4, 2, 0, 0, 3, 1],
+          backgroundColor: '#00d4aa',
+          borderRadius: 4,
+          borderWidth: 0
+        }
+      ]
+    },
+    options: {
+      ...chartDefaults,
+      scales: {
+        x: { stacked: true, ticks: { color: '#8892b0', font: { size: 9 } }, grid: { color: '#2e3250' } },
+        y: { stacked: true, ticks: { color: '#8892b0', font: { size: 10 } }, grid: { color: '#2e3250' } }
+      },
+      plugins: {
+        legend: { labels: { color: '#8892b0', font: { size: 10 }, boxWidth: 10 } }
+      }
+    }
+  });
+}
+
+// ===== INIT =====
+initCharts();
+renderEvents();
+</script>
+</body>
+</html>
